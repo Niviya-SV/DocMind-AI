@@ -41,7 +41,7 @@ export default function ComparisonSection() {
         <div className="text-center space-y-4 mb-16">
           <div className="reveal section-label">Comparison</div>
           <h2 className="reveal stagger-1 text-section-xl font-extrabold tracking-tight">
-            RAGVault vs <span className="gradient-text-purple">Cloud AI Tools</span>
+            DOCMIND AI vs <span className="gradient-text-purple">Cloud AI Tools</span>
           </h2>
           <p className="reveal stagger-2 text-muted-foreground text-lg max-w-xl mx-auto">
             See why privacy-first matters for document intelligence.

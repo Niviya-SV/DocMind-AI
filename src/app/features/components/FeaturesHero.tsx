@@ -35,7 +35,7 @@ export default function FeaturesHero() {
           <span className="gradient-text-purple">Private Document Intelligence</span>
         </h1>
         <p className="reveal stagger-2 text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          RAGVault is packed with capabilities that make document Q&A powerful, private, and production-ready.
+          DOCMIND AI is packed with capabilities that make document Q&A powerful, private, and production-ready.
         </p>
         <div className="reveal stagger-3 flex flex-wrap justify-center gap-4">
           <Link

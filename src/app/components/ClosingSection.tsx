@@ -44,7 +44,7 @@ export default function ClosingSection() {
         </h2>
 
         <p className="reveal stagger-2 text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-          RAGVault transforms static PDFs into living knowledge bases. Ask questions the way you think.
+          DOCMIND AI transforms static PDFs into living knowledge bases. Ask questions the way you think.
           Get answers the way you need. Completely private. Completely yours.
         </p>
 

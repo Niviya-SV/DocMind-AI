@@ -132,11 +132,11 @@ export default function HeroSection() {
           {/* Headline */}
           <div className="reveal stagger-1 space-y-2">
             <h1 className="text-hero-xl font-extrabold tracking-tight leading-[1.05] text-foreground">
-              A Local PDF
+              A Privacy Preserving
               <br />
-              Question-Answering
+              AI Document
               <br />
-              <span className="gradient-text-purple">System Using RAG</span>
+              <span className="gradient-text-purple">Assistant Using RAG</span>
             </h1>
           </div>
 
@@ -214,8 +214,8 @@ export default function HeroSection() {
               >
                 <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/10 backdrop-blur-sm flex items-center justify-center">
                   <div className="text-center">
-                    <div className="text-4xl font-black gradient-text-purple">RAG</div>
-                    <div className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-widest">Vault</div>
+                    <div className="text-4xl font-black gradient-text-purple">Privacy</div>
+                    <div className="text-xs font-bold text-muted-foreground mt-1 uppercase tracking-widest">FIRST</div>
                   </div>
                 </div>
               </div>

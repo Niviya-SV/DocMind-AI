@@ -54,8 +54,8 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "RAGVault",
-  description: "RAGVault Application",
+  title: "DOCMIND AI",
+  description: "DOCMIND AI Application",
 };
 
 export default function RootLayout({
