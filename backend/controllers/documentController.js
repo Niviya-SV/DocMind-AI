@@ -13,14 +13,16 @@ const {
     generateEmbedding,
 } = require("../services/embeddingService");
 
-
 // ==========================================
 // UPLOAD + PROCESS MULTIPLE PDFs
 // ==========================================
 
 const uploadDocument = async (req, res) => {
     try {
-        // Check files
+        // ------------------------------------------
+        // Check uploaded files
+        // ------------------------------------------
+
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -30,170 +32,339 @@ const uploadDocument = async (req, res) => {
 
         const processedDocuments = [];
 
-        // Process each PDF
+        // ------------------------------------------
+        // Process every uploaded PDF
+        // ------------------------------------------
+
         for (const file of req.files) {
-            console.log(
-                `📄 Processing: ${file.originalname}`
-            );
+            console.log("");
+            console.log("==========================================");
+            console.log(`📄 Processing: ${file.originalname}`);
+            console.log("==========================================");
 
-            // ------------------------------------------
-            // Create document
-            // ------------------------------------------
+            let document = null;
 
-            const document = await Document.create({
-                title: file.originalname.replace(
-                    /\.pdf$/i,
-                    ""
-                ),
+            try {
+                // ------------------------------------------
+                // Create document record
+                // ------------------------------------------
 
-                fileName: file.originalname,
+                document = await Document.create({
+                    title: file.originalname.replace(
+                        /\.pdf$/i,
+                        ""
+                    ),
 
-                filePath: file.path,
+                    fileName: file.originalname,
 
-                fileSize: file.size,
+                    filePath: file.path,
 
-                status: "processing",
-            });
+                    fileSize: file.size,
 
-            console.log(
-                `📁 Document created: ${document._id}`
-            );
+                    status: "processing",
+                });
 
-            // ------------------------------------------
-            // Extract PDF text
-            // ------------------------------------------
-
-            console.log(
-                "📖 Extracting text..."
-            );
-
-            const pdfData =
-                await extractTextFromPDF(
-                    file.path
-                );
-
-            console.log(
-                `📄 Extracted ${pdfData.pages} pages`
-            );
-
-            // ------------------------------------------
-            // Split text into chunks
-            // ------------------------------------------
-
-            const chunks =
-                splitTextIntoChunks(
-                    pdfData.text
-                );
-
-            console.log(
-                `✂️ Created ${chunks.length} chunks`
-            );
-
-            // ------------------------------------------
-            // Generate embeddings
-            // ------------------------------------------
-
-            const chunkDocuments = [];
-
-            for (
-                let index = 0;
-                index < chunks.length;
-                index++
-            ) {
                 console.log(
-                    `🧠 Embedding ${index + 1}/${chunks.length}`
+                    `📁 Document created: ${document._id}`
                 );
 
-                const embedding =
-                    await generateEmbedding(
-                        chunks[index]
+                // ------------------------------------------
+                // Extract PDF text
+                // ------------------------------------------
+
+                console.log("📖 Extracting text...");
+
+                const pdfData =
+                    await extractTextFromPDF(
+                        file.path
                     );
 
-                chunkDocuments.push({
-                    documentId:
-                        document._id,
+                console.log(
+                    `📄 Extracted ${pdfData.pages} pages`
+                );
 
-                    chunkIndex:
-                        index,
+                // ------------------------------------------
+                // DEBUG: Check extracted text
+                // ------------------------------------------
 
-                    text:
-                        chunks[index],
+                const extractedText =
+                    pdfData.text || "";
 
-                    embedding:
-                        embedding,
+                console.log(
+                    "📝 Extracted text length:",
+                    extractedText.length
+                );
+
+                console.log(
+                    "📝 Extracted text preview:"
+                );
+
+                console.log(
+                    extractedText.length > 0
+                        ? extractedText.substring(
+                              0,
+                              500
+                          )
+                        : "❌ NO TEXT FOUND"
+                );
+
+                // ------------------------------------------
+                // Check whether text was extracted
+                // ------------------------------------------
+
+                if (!extractedText.trim()) {
+                    console.warn(
+                        `⚠️ No text extracted from ${file.originalname}`
+                    );
+
+                    document.status = "failed";
+
+                    await document.save();
+
+                    processedDocuments.push({
+                        id: document._id,
+                        title: document.title,
+                        fileName: document.fileName,
+                        fileSize: document.fileSize,
+                        pages: pdfData.pages,
+                        chunks: 0,
+                        status: "failed",
+                        message:
+                            "No readable text was found in this PDF. The PDF may be scanned/image-based.",
+                    });
+
+                    continue;
+                }
+
+                // ------------------------------------------
+                // Split text into chunks
+                // ------------------------------------------
+
+                console.log(
+                    "✂️ Splitting extracted text..."
+                );
+
+                const chunks =
+                    splitTextIntoChunks(
+                        extractedText
+                    );
+
+                console.log(
+                    `✂️ Created ${chunks.length} chunks`
+                );
+
+                // ------------------------------------------
+                // Check chunks
+                // ------------------------------------------
+
+                if (chunks.length === 0) {
+                    console.warn(
+                        "⚠️ Text was extracted but no chunks were created"
+                    );
+
+                    document.status = "failed";
+
+                    await document.save();
+
+                    processedDocuments.push({
+                        id: document._id,
+                        title: document.title,
+                        fileName: document.fileName,
+                        fileSize: document.fileSize,
+                        pages: pdfData.pages,
+                        chunks: 0,
+                        status: "failed",
+                        message:
+                            "Text was extracted but no chunks could be created.",
+                    });
+
+                    continue;
+                }
+
+                // ------------------------------------------
+                // Generate embeddings
+                // ------------------------------------------
+
+                const chunkDocuments = [];
+
+                console.log(
+                    `🧠 Generating ${chunks.length} embeddings...`
+                );
+
+                for (
+                    let index = 0;
+                    index < chunks.length;
+                    index++
+                ) {
+                    console.log(
+                        `🧠 Embedding ${index + 1}/${chunks.length}`
+                    );
+
+                    const embedding =
+                        await generateEmbedding(
+                            chunks[index]
+                        );
+
+                    if (
+                        !embedding ||
+                        !Array.isArray(embedding) ||
+                        embedding.length === 0
+                    ) {
+                        throw new Error(
+                            `Invalid embedding generated for chunk ${index}`
+                        );
+                    }
+
+                    chunkDocuments.push({
+                        documentId:
+                            document._id,
+
+                        chunkIndex:
+                            index,
+
+                        text:
+                            chunks[index],
+
+                        embedding:
+                            embedding,
+                    });
+                }
+
+                // ------------------------------------------
+                // Save chunks
+                // ------------------------------------------
+
+                console.log(
+                    "💾 Saving document chunks..."
+                );
+
+                if (
+                    chunkDocuments.length > 0
+                ) {
+                    await DocumentChunk.insertMany(
+                        chunkDocuments
+                    );
+                }
+
+                console.log(
+                    `💾 Saved ${chunkDocuments.length} chunks`
+                );
+
+                // ------------------------------------------
+                // Update document status
+                // ------------------------------------------
+
+                document.status =
+                    "processed";
+
+                await document.save();
+
+                // ------------------------------------------
+                // Add processed document
+                // ------------------------------------------
+
+                processedDocuments.push({
+                    id: document._id,
+
+                    title:
+                        document.title,
+
+                    fileName:
+                        document.fileName,
+
+                    fileSize:
+                        document.fileSize,
+
+                    pages:
+                        pdfData.pages,
+
+                    chunks:
+                        chunks.length,
+
+                    status:
+                        document.status,
+                });
+
+                console.log(
+                    `✅ Completed: ${file.originalname}`
+                );
+            } catch (fileError) {
+                console.error(
+                    `❌ Failed processing ${file.originalname}:`,
+                    fileError
+                );
+
+                // ------------------------------------------
+                // Mark document as failed
+                // ------------------------------------------
+
+                if (document) {
+                    document.status =
+                        "failed";
+
+                    await document.save();
+                }
+
+                processedDocuments.push({
+                    id:
+                        document
+                            ? document._id
+                            : null,
+
+                    title:
+                        file.originalname.replace(
+                            /\.pdf$/i,
+                            ""
+                        ),
+
+                    fileName:
+                        file.originalname,
+
+                    fileSize:
+                        file.size,
+
+                    status:
+                        "failed",
+
+                    chunks: 0,
+
+                    message:
+                        fileError.message,
                 });
             }
-
-            // ------------------------------------------
-            // Save chunks
-            // ------------------------------------------
-
-            if (
-                chunkDocuments.length > 0
-            ) {
-                await DocumentChunk.insertMany(
-                    chunkDocuments
-                );
-            }
-
-            console.log(
-                "💾 Document chunks saved"
-            );
-
-            // ------------------------------------------
-            // Update document status
-            // ------------------------------------------
-
-            document.status =
-                "processed";
-
-            await document.save();
-
-            // ------------------------------------------
-            // Add response information
-            // ------------------------------------------
-
-            processedDocuments.push({
-                id: document._id,
-
-                title:
-                    document.title,
-
-                fileName:
-                    document.fileName,
-
-                fileSize:
-                    document.fileSize,
-
-                pages:
-                    pdfData.pages,
-
-                chunks:
-                    chunks.length,
-
-                status:
-                    document.status,
-            });
-
-            console.log(
-                `✅ Completed: ${file.originalname}`
-            );
         }
 
         // ------------------------------------------
         // Final response
         // ------------------------------------------
 
+        const successfulDocuments =
+            processedDocuments.filter(
+                (doc) =>
+                    doc.status ===
+                    "processed"
+            );
+
+        const failedDocuments =
+            processedDocuments.filter(
+                (doc) =>
+                    doc.status !==
+                    "processed"
+            );
+
         res.status(201).json({
-            success: true,
+            success:
+                successfulDocuments.length >
+                0,
 
             message:
-                "All PDFs uploaded and processed successfully",
+                failedDocuments.length === 0
+                    ? "All PDFs uploaded and processed successfully"
+                    : `${successfulDocuments.length} PDF(s) processed, ${failedDocuments.length} PDF(s) failed`,
 
             documents:
                 processedDocuments,
         });
-
     } catch (error) {
         console.error(
             "❌ Multiple PDF processing error:",
@@ -212,7 +383,6 @@ const uploadDocument = async (req, res) => {
     }
 };
 
-
 // ==========================================
 // GET ALL DOCUMENTS
 // ==========================================
@@ -227,11 +397,8 @@ const getDocuments = async (req, res) => {
 
         res.status(200).json({
             success: true,
-
-            documents:
-                documents,
+            documents,
         });
-
     } catch (error) {
         console.error(
             "❌ Get documents error:",
@@ -249,7 +416,6 @@ const getDocuments = async (req, res) => {
         });
     }
 };
-
 
 // ==========================================
 // GET SINGLE DOCUMENT
@@ -276,11 +442,8 @@ const getDocumentById = async (
 
         res.status(200).json({
             success: true,
-
-            document:
-                document,
+            document,
         });
-
     } catch (error) {
         console.error(
             "❌ Get document error:",
@@ -298,7 +461,6 @@ const getDocumentById = async (
         });
     }
 };
-
 
 // ==========================================
 // DELETE DOCUMENT
@@ -343,7 +505,7 @@ const deleteDocument = async (
         }
 
         // ------------------------------------------
-        // Delete chunks
+        // Delete document chunks
         // ------------------------------------------
 
         await DocumentChunk.deleteMany({
@@ -387,7 +549,6 @@ const deleteDocument = async (
             message:
                 "Document deleted successfully",
         });
-
     } catch (error) {
         console.error(
             "❌ Delete document error:",
@@ -405,7 +566,6 @@ const deleteDocument = async (
         });
     }
 };
-
 
 // ==========================================
 // EXPORT
