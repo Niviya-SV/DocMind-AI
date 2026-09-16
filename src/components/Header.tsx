@@ -9,7 +9,6 @@
 //   { label: 'Features', href: '/features' },
 //   { label: 'How It Works', href: '/how-it-works' },
 //   { label: 'Sandbox', href: '/sandbox' },
-//   { label: 'Demo', href: '#demo' },
 //   { label: 'About', href: '#about' },
 // ];
 
@@ -124,7 +123,6 @@ const navLinks = [
   { label: "Features", href: "/features" },
   { label: "How It Works", href: "/how-it-works" },
   { label: "Sandbox", href: "/sandbox" },
-  { label: "Demo", href: "#demo" },
   { label: "About", href: "#about" },
 ];
 
@@ -163,23 +161,23 @@ export default function Header() {
             : "bg-transparent py-5"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(180px,1fr)_auto_minmax(360px,1fr)] items-center gap-6 px-6">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex min-w-0 items-center gap-3">
             <AppLogo />
-            <span className="text-xl font-bold text-foreground">
+            <span className="whitespace-nowrap text-xl font-bold text-foreground">
               DOCMIND AI
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1 px-5 py-2 rounded-full border border-border/60 bg-card/50 backdrop-blur-md">
+          <nav className="hidden items-center gap-1 rounded-full border border-border/60 bg-card/50 px-4 py-2 backdrop-blur-md lg:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-primary/10 rounded-full transition-all duration-200"
+                className="whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground transition-all duration-200 hover:bg-primary/10 hover:text-foreground"
               >
                 {link.label}
               </Link>
@@ -187,18 +185,32 @@ export default function Header() {
           </nav>
 
           {/* CTA */}
-          <div className="hidden lg:flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+          <div className="hidden items-center justify-end gap-3 lg:flex">
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse"></span>
 
-              <span className="text-xs font-bold uppercase tracking-widest text-green-400">
+              <span className="whitespace-nowrap text-xs font-bold uppercase tracking-widest text-green-400">
                 Local &amp; Private
               </span>
             </div>
 
             <Link
-              href="/sandbox"
-              className="px-6 py-2.5 rounded-full bg-primary text-primary-foreground text-xs font-black uppercase tracking-widest hover:bg-accent transition-all duration-300"
+              href="/login"
+              className="whitespace-nowrap px-3 py-2.5 text-xs font-black uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Login
+            </Link>
+
+            <Link
+              href="/signup"
+              className="whitespace-nowrap rounded-full border border-primary/60 px-3 py-2.5 text-xs font-black uppercase tracking-widest text-primary transition-colors hover:bg-primary/10"
+            >
+              Sign Up
+            </Link>
+
+            <Link
+              href="/signup"
+              className="whitespace-nowrap rounded-full bg-primary px-5 py-2.5 text-xs font-black uppercase tracking-widest text-primary-foreground transition-all duration-300 hover:bg-accent"
             >
               Try Sandbox
             </Link>
@@ -234,7 +246,23 @@ export default function Header() {
           ))}
 
           <Link
-            href="/sandbox"
+            href="/login"
+            onClick={() => setMenuOpen(false)}
+            className="text-2xl font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all duration-200"
+          >
+            Login
+          </Link>
+
+          <Link
+            href="/signup"
+            onClick={() => setMenuOpen(false)}
+            className="text-2xl font-black uppercase tracking-widest text-primary hover:text-foreground transition-all duration-200"
+          >
+            Sign Up
+          </Link>
+
+          <Link
+            href="/signup"
             onClick={() => setMenuOpen(false)}
             className="mt-4 px-10 py-4 rounded-full bg-primary text-primary-foreground text-sm font-black uppercase tracking-widest"
           >

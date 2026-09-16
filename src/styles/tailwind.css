@@ -378,3 +378,14 @@
 .animate-rotate-slow { animation: rotate-slow 25s linear infinite; }
 .animate-blob { animation: blob-morph 8s ease-in-out infinite; }
 .animate-node-pulse { animation: node-pulse 2.5s ease-in-out infinite; }
+
+
+/* DOCMIND authentication header controls */
+.auth-header-actions {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.auth-header-actions a {
+  flex-shrink: 0;
+}
