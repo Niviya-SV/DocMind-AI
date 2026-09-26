@@ -33,7 +33,7 @@ export default function LoginPage() {
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("docmind_user", JSON.stringify(data.user));
-      router.push("/sandbox");
+      router.push("/workspace");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to log in");
     } finally {

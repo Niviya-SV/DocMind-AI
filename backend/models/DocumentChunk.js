@@ -14,6 +14,11 @@ const documentChunkSchema = new mongoose.Schema(
             required: false,
         },
 
+        guestId: {
+            type: String,
+            required: false,
+        },
+
         chunkIndex: {
             type: Number,
             required: true,

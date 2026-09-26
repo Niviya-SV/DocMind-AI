@@ -50,7 +50,9 @@ const searchSimilarChunks = async (
     question,
     documentId,
     userId = null,
-    topK = 5
+    topK = 5,
+    guestId = null,
+    documentIds = []
 ) => {
     console.log("🔎 Vector search started");
     console.log("📄 Document ID:", documentId);
@@ -79,7 +81,9 @@ const searchSimilarChunks = async (
     // Build MongoDB query
     // ------------------------------------------
     const query = {
-        documentId,
+        documentId: documentIds.length > 0
+            ? { $in: documentIds }
+            : documentId,
     };
 
     // IMPORTANT:
@@ -89,6 +93,8 @@ const searchSimilarChunks = async (
     // Therefore userId can be undefined.
     if (userId) {
         query.userId = userId;
+    } else if (guestId) {
+        query.guestId = guestId;
     }
 
     console.log("🔍 MongoDB chunk query:", query);

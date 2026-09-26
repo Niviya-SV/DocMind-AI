@@ -16,12 +16,20 @@ const askQuestion = async (req, res) => {
     const startTime = Date.now();
 
     try {
-        const { question, documentId } = req.body;
+        const { question, documentId, documentIds = [] } = req.body;
+        const guestId = req.userId ? null : req.headers["x-guest-id"];
 
         if (!question) {
             return res.status(400).json({
                 success: false,
                 message: "Question is required",
+            });
+        }
+
+        if (!req.userId && (!guestId || !/^[a-zA-Z0-9-]{16,100}$/.test(guestId))) {
+            return res.status(400).json({
+                success: false,
+                message: "A guest session is required",
             });
         }
 
@@ -32,7 +40,9 @@ const askQuestion = async (req, res) => {
             question,
             documentId,
             req.userId,
-            5
+            5,
+            guestId,
+            documentIds
         );
 
         console.log(
@@ -103,6 +113,8 @@ const askQuestion = async (req, res) => {
         const chat = await Chat.create({
 
             documentId: documentId || null,
+            userId: req.userId || undefined,
+            guestId: guestId || undefined,
             question,
             answer,
             sources,
@@ -148,10 +160,14 @@ const askQuestion = async (req, res) => {
 const getChatHistory = async (req, res) => {
     try {
         const { documentId } = req.params;
+        const query = req.userId
+            ? { documentId, userId: req.userId }
+            : req.headers["x-guest-id"]
+            ? { documentId, guestId: req.headers["x-guest-id"] }
+            : { documentId, _id: null };
 
         const chats = await Chat.find({
-            
-            documentId,
+            ...query,
         }).sort({
             createdAt: 1,
         });

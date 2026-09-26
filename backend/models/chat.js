@@ -8,6 +8,11 @@ const chatSchema = new mongoose.Schema(
             required: false,
         },
 
+        guestId: {
+            type: String,
+            required: false,
+        },
+
         documentId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Document",

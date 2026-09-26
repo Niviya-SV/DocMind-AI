@@ -23,6 +23,19 @@ app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/chat", chatRoutes);
 
+// Return API errors as JSON, including Multer upload errors.
+app.use((error, req, res, next) => {
+    if (res.headersSent) {
+        return next(error);
+    }
+
+    console.error("❌ API error:", error);
+    res.status(error.statusCode || 400).json({
+        success: false,
+        message: error.message || "Request failed",
+    });
+});
+
 // Test route
 app.get("/", (req, res) => {
     res.json({

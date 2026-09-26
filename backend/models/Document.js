@@ -8,6 +8,12 @@ const documentSchema = new mongoose.Schema(
             required: false,
         },
 
+        guestId: {
+            type: String,
+            required: false,
+            index: true,
+        },
+
         title: {
             type: String,
             required: true,

@@ -6,6 +6,7 @@ const Chat = require("../models/chat");
 
 const {
     extractTextFromPDF,
+    extractTextFromWord,
     splitTextIntoChunks,
 } = require("../services/pdfService");
 
@@ -14,19 +15,48 @@ const {
 } = require("../services/embeddingService");
 
 // ==========================================
-// UPLOAD + PROCESS MULTIPLE PDFs
+// UPLOAD + PROCESS ONE PDF OR WORD DOCUMENT
 // ==========================================
 
 const uploadDocument = async (req, res) => {
     try {
         // ------------------------------------------
-        // Check uploaded files
+        const userId = req.userId || null;
+        const guestId = userId ? null : req.headers["x-guest-id"];
+
+        // Check uploaded file and guest session
         // ------------------------------------------
 
-        if (!req.files || req.files.length === 0) {
+        const files = [
+            ...(req.files?.documents || []),
+            ...(req.files?.document || []),
+        ];
+
+        if (files.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: "Please upload at least one PDF file",
+                message: "Please upload at least one PDF or DOCX document",
+            });
+        }
+
+        if (!userId && files.length > 1) {
+            return res.status(400).json({
+                success: false,
+                message: "Guest access is limited to one document",
+            });
+        }
+
+        if (!userId && (!guestId || !/^[a-zA-Z0-9-]{16,100}$/.test(guestId))) {
+            return res.status(400).json({
+                success: false,
+                message: "A guest session is required",
+            });
+        }
+
+        if (!userId && await Document.exists({ guestId })) {
+            return res.status(409).json({
+                success: false,
+                message: "Guest access is limited to one document. Sign up to upload more.",
             });
         }
 
@@ -36,7 +66,7 @@ const uploadDocument = async (req, res) => {
         // Process every uploaded PDF
         // ------------------------------------------
 
-        for (const file of req.files) {
+        for (const file of files) {
             console.log("");
             console.log("==========================================");
             console.log(`📄 Processing: ${file.originalname}`);
@@ -50,8 +80,10 @@ const uploadDocument = async (req, res) => {
                 // ------------------------------------------
 
                 document = await Document.create({
+                    userId,
+                    guestId: guestId || undefined,
                     title: file.originalname.replace(
-                        /\.pdf$/i,
+                        /\.(pdf|docx?)$/i,
                         ""
                     ),
 
@@ -74,13 +106,12 @@ const uploadDocument = async (req, res) => {
 
                 console.log("📖 Extracting text...");
 
-                const pdfData =
-                    await extractTextFromPDF(
-                        file.path
-                    );
+                const extractedData = /\.pdf$/i.test(file.originalname)
+                    ? await extractTextFromPDF(file.path)
+                    : await extractTextFromWord(file.path);
 
                 console.log(
-                    `📄 Extracted ${pdfData.pages} pages`
+                    `📄 Extracted ${extractedData.pages || 0} pages`
                 );
 
                 // ------------------------------------------
@@ -88,7 +119,7 @@ const uploadDocument = async (req, res) => {
                 // ------------------------------------------
 
                 const extractedText =
-                    pdfData.text || "";
+                    extractedData.text || "";
 
                 console.log(
                     "📝 Extracted text length:",
@@ -126,7 +157,7 @@ const uploadDocument = async (req, res) => {
                         title: document.title,
                         fileName: document.fileName,
                         fileSize: document.fileSize,
-                        pages: pdfData.pages,
+                        pages: extractedData.pages || 0,
                         chunks: 0,
                         status: "failed",
                         message:
@@ -219,6 +250,10 @@ const uploadDocument = async (req, res) => {
                         documentId:
                             document._id,
 
+                        userId,
+
+                        guestId: guestId || undefined,
+
                         chunkIndex:
                             index,
 
@@ -275,8 +310,8 @@ const uploadDocument = async (req, res) => {
                     fileSize:
                         document.fileSize,
 
-                    pages:
-                        pdfData.pages,
+                        pages:
+                            extractedData.pages || 0,
 
                     chunks:
                         chunks.length,
@@ -389,8 +424,14 @@ const uploadDocument = async (req, res) => {
 
 const getDocuments = async (req, res) => {
     try {
+        const query = req.userId
+            ? { userId: req.userId }
+            : req.headers["x-guest-id"]
+            ? { guestId: req.headers["x-guest-id"] }
+            : { _id: null };
+
         const documents =
-            await Document.find()
+            await Document.find(query)
                 .sort({
                     createdAt: -1,
                 });

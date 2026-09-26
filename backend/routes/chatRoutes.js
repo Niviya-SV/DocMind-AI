@@ -1,4 +1,5 @@
 const express = require("express");
+const optionalAuth = require("../middleware/optionalAuthMiddleware");
 
 const {
     askQuestion,
@@ -14,6 +15,7 @@ const router = express.Router();
 
 router.post(
     "/ask",
+    optionalAuth,
     askQuestion
 );
 
@@ -24,6 +26,7 @@ router.post(
 
 router.get(
     "/history/:documentId",
+    optionalAuth,
     getChatHistory
 );
 

@@ -1,5 +1,6 @@
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
 
 // ==========================================
 // EXTRACT TEXT FROM PDF
@@ -196,5 +197,13 @@ const splitTextIntoChunks = (
 
 module.exports = {
     extractTextFromPDF,
+    extractTextFromWord: async (filePath) => {
+        if (!fs.existsSync(filePath)) {
+            throw new Error(`Word file not found: ${filePath}`);
+        }
+
+        const result = await mammoth.extractRawText({ path: filePath });
+        return { text: result.value || "", pages: 0 };
+    },
     splitTextIntoChunks,
 };

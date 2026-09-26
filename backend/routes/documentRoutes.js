@@ -1,5 +1,7 @@
 const express = require("express");
 const multer = require("multer");
+const path = require("path");
+const optionalAuth = require("../middleware/optionalAuthMiddleware");
 
 const {
     uploadDocument,
@@ -31,14 +33,13 @@ const upload = multer({
     storage,
 
     fileFilter: (req, file, cb) => {
-        if (
-            file.mimetype === "application/pdf"
-        ) {
+        const extension = path.extname(file.originalname).toLowerCase();
+        if ([".pdf", ".docx"].includes(extension)) {
             cb(null, true);
         } else {
             cb(
                 new Error(
-                    "Only PDF files are allowed"
+                    "Only PDF and DOCX files are allowed"
                 ),
                 false
             );
@@ -53,12 +54,17 @@ const upload = multer({
 
 
 // ==========================================
-// UPLOAD MULTIPLE PDFs
+// Upload up to ten documents for authenticated users. Guest requests are
+// restricted to one document by the controller.
 // ==========================================
 
 router.post(
     "/upload",
-    upload.array("pdfs", 10),
+    optionalAuth,
+    upload.fields([
+        { name: "documents", maxCount: 10 },
+        { name: "document", maxCount: 1 },
+    ]),
     uploadDocument
 );
 
@@ -69,6 +75,7 @@ router.post(
 
 router.get(
     "/",
+    optionalAuth,
     getDocuments
 );
 

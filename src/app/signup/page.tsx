@@ -45,7 +45,7 @@ export default function SignupPage() {
 
       localStorage.setItem("token", loginData.token);
       localStorage.setItem("docmind_user", JSON.stringify(loginData.user));
-      router.push("/sandbox");
+      router.push("/workspace");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to create your account");
     } finally {
