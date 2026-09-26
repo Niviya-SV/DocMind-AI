@@ -202,7 +202,7 @@ const uploadDocument = async (req, res) => {
                         title: document.title,
                         fileName: document.fileName,
                         fileSize: document.fileSize,
-                        pages: pdfData.pages,
+                        pages: extractedData.pages || 0,
                         chunks: 0,
                         status: "failed",
                         message:

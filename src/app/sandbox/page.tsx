@@ -461,7 +461,7 @@ import React, {
   useCallback,
   useEffect,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -560,7 +560,8 @@ const pipelineStages = [
 export default function SandboxPage() {
 
   const router = useRouter();
-  const authenticated = typeof window !== 'undefined' && window.location.pathname === '/workspace';
+  const pathname = usePathname();
+  const authenticated = pathname === '/workspace';
 
   useEffect(() => {
     if (!authenticated && localStorage.getItem('token')) {
@@ -789,6 +790,7 @@ export default function SandboxPage() {
 
 
       const ids = uploadedDocuments
+        .filter((document) => !('status' in document) || document.status === 'processed')
         .map((document) => document.id || document._id)
         .filter((id): id is string => Boolean(id))
         .map(String);
@@ -1287,7 +1289,11 @@ export default function SandboxPage() {
 
     setUploadedFile(null);
 
+    setUploadedFiles([]);
+
     setDocumentId(null);
+
+    setDocumentIds([]);
 
     setAnswer(null);
 
