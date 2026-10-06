@@ -1,3 +1,11 @@
+const OLLAMA_URL =
+    process.env.OLLAMA_URL ||
+    "http://localhost:11434";
+
+const CHAT_MODEL =
+    process.env.CHAT_MODEL ||
+    "qwen2.5:0.5b";
+
 const generateAnswer = async (question, context) => {
     try {
         const prompt = `
@@ -23,14 +31,14 @@ ANSWER:
 `;
 
         const response = await fetch(
-            "http://localhost:11434/api/generate",
+            `${OLLAMA_URL}/api/generate`,
             {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    model: "llama3.2",
+                    model: CHAT_MODEL,
                     prompt: prompt,
                     stream: false,
                 }),

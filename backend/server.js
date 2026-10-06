@@ -8,6 +8,7 @@ const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const documentRoutes = require("./routes/documentRoutes");
 const chatRoutes = require("./routes/chatRoutes");
+const sandboxRoutes = require("./routes/sandboxRoutes");
 
 // Connect MongoDB
 connectDB();
@@ -22,7 +23,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/chat", chatRoutes);
-
+app.use("/api", sandboxRoutes);
 // Return API errors as JSON, including Multer upload errors.
 app.use((error, req, res, next) => {
     if (res.headersSent) {
