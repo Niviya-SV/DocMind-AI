@@ -1,9 +1,13 @@
+
+
 // const express = require("express");
+
 // const optionalAuth = require("../middleware/optionalAuthMiddleware");
 
 // const {
 //     askQuestion,
 //     getChatHistory,
+//     getAllChatHistory,
 // } = require("../controllers/chatController");
 
 // const router = express.Router();
@@ -12,7 +16,6 @@
 // // ==========================================
 // // ASK QUESTION
 // // ==========================================
-
 // router.post(
 //     "/ask",
 //     optionalAuth,
@@ -21,9 +24,8 @@
 
 
 // // ==========================================
-// // CHAT HISTORY
+// // CHAT HISTORY FOR ONE DOCUMENT
 // // ==========================================
-
 // router.get(
 //     "/history/:documentId",
 //     optionalAuth,
@@ -31,12 +33,23 @@
 // );
 
 
-// module.exports = router;
+// // ==========================================
+// // ALL CHAT HISTORY FOR LOGGED-IN USER
+// // ==========================================
+// router.get(
+//     "/history",
+//     optionalAuth,
+//     getAllChatHistory
+// );
+
+
+// module.exports = router;2
 
 
 const express = require("express");
-
 const optionalAuth = require("../middleware/optionalAuthMiddleware");
+
+const router = express.Router();
 
 const {
     askQuestion,
@@ -44,12 +57,11 @@ const {
     getAllChatHistory,
 } = require("../controllers/chatController");
 
-const router = express.Router();
 
-
-// ==========================================
+// =====================================================
 // ASK QUESTION
-// ==========================================
+// =====================================================
+
 router.post(
     "/ask",
     optionalAuth,
@@ -57,9 +69,10 @@ router.post(
 );
 
 
-// ==========================================
-// CHAT HISTORY FOR ONE DOCUMENT
-// ==========================================
+// =====================================================
+// GET CHAT HISTORY FOR ONE DOCUMENT
+// =====================================================
+
 router.get(
     "/history/:documentId",
     optionalAuth,
@@ -67,9 +80,10 @@ router.get(
 );
 
 
-// ==========================================
-// ALL CHAT HISTORY FOR LOGGED-IN USER
-// ==========================================
+// =====================================================
+// GET ALL CHAT HISTORY
+// =====================================================
+
 router.get(
     "/history",
     optionalAuth,

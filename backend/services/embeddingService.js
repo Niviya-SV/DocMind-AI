@@ -6,6 +6,8 @@ const EMBEDDING_MODEL =
     process.env.EMBEDDING_MODEL ||
     "nomic-embed-text";
 
+const EMBEDDING_TIMEOUT_MS = 60000;
+
 
 // ==========================================
 // GENERATE EMBEDDING
@@ -40,6 +42,10 @@ const generateEmbedding = async (text) => {
                     prompt:
                         text,
                 }),
+
+                signal: AbortSignal.timeout(
+                    EMBEDDING_TIMEOUT_MS
+                ),
             }
         );
 

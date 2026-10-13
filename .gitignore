@@ -35,3 +35,12 @@ jest-test-results.json
 
 # Optional: if using TurboRepo or monorepo
 turbo/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Uploaded documents
+backend/uploads/*
+!backend/uploads/.gitkeep

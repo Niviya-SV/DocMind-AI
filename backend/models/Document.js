@@ -74,7 +74,7 @@ const documentSchema = new mongoose.Schema(
         space: {
             type: String,
             enum: ["sandbox", "workspace"],
-            default: "sandbox",
+            default: "workspace",
             required: true,
             index: true,
         },

@@ -1,6 +1,50 @@
 const fs = require("fs");
 const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
+const { createCanvas } = require("@napi-rs/canvas");
+const { createWorker } = require("tesseract.js");
+
+const extractTextFromScannedPDF = async (dataBuffer, pages) => {
+    console.log("🔎 No embedded text found. Starting OCR...");
+
+    const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const pdf = await pdfjs.getDocument({
+        data: new Uint8Array(dataBuffer),
+        useWorkerFetch: false,
+        isEvalSupported: false,
+    }).promise;
+    const worker = await createWorker("eng");
+    const pageTexts = [];
+
+    try {
+        for (let pageNumber = 1; pageNumber <= pages; pageNumber++) {
+            const page = await pdf.getPage(pageNumber);
+            const viewport = page.getViewport({ scale: 2 });
+            const canvas = createCanvas(
+                Math.ceil(viewport.width),
+                Math.ceil(viewport.height)
+            );
+
+            await page.render({
+                canvasContext: canvas.getContext("2d"),
+                viewport,
+            }).promise;
+
+            const result = await worker.recognize(
+                canvas.toBuffer("image/png")
+            );
+            const text = result.data.text.trim();
+
+            if (text) {
+                pageTexts.push(`[Page ${pageNumber}]\n${text}`);
+            }
+        }
+    } finally {
+        await worker.terminate();
+    }
+
+    return pageTexts.join("\n\n");
+};
 
 // ==========================================
 // EXTRACT TEXT FROM PDF
@@ -34,7 +78,7 @@ const extractTextFromPDF = async (filePath) => {
 
         const data = await pdfParse(dataBuffer);
 
-        const text = data.text || "";
+        let text = data.text || "";
 
         console.log(
             `📄 PDF extracted successfully: ${data.numpages} pages`
@@ -47,6 +91,13 @@ const extractTextFromPDF = async (filePath) => {
         // ------------------------------------------
         // Debug preview
         // ------------------------------------------
+
+        if (!text.trim() && data.numpages) {
+            text = await extractTextFromScannedPDF(
+                dataBuffer,
+                data.numpages
+            );
+        }
 
         if (text.trim().length > 0) {
 

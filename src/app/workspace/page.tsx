@@ -717,6 +717,9 @@ export default function WorkspacePage() {
   const [isAsking, setIsAsking] =
     useState(false);
 
+  const [isPreparingWorkspace, setIsPreparingWorkspace] =
+    useState(false);
+
   const [isDragging, setIsDragging] =
     useState(false);
 
@@ -739,6 +742,10 @@ export default function WorkspacePage() {
       localStorage.getItem("accessToken")
     );
   };
+
+  const getAuthHeaders = (token: string): HeadersInit => ({
+    Authorization: `Bearer ${token}`,
+  });
 
   // ====================================================
   // SELECTED DOCUMENT
@@ -806,16 +813,43 @@ export default function WorkspacePage() {
         "📚 Loading Workspace documents..."
       );
 
+      setIsPreparingWorkspace(true);
+
+      const reprocessResponse = await fetch(
+        `${API_URL}/documents/reprocess`,
+        {
+          method: "POST",
+          headers: {
+            Authorization:
+              `Bearer ${token}`,
+          },
+        }
+      );
+
+      const reprocessData =
+        await readApiResponse(reprocessResponse);
+
+      if (reprocessResponse.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        setError("Your login session is invalid or expired. Please log in again.");
+        return;
+      }
+
+      if (!reprocessResponse.ok || !reprocessData.success) {
+        throw new Error(
+          reprocessData.message ||
+            "Failed to prepare Workspace documents."
+        );
+      }
+
       const response =
         await fetch(
           `${API_URL}/documents?space=workspace`,
           {
             method: "GET",
 
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
+            headers: getAuthHeaders(token),
           }
         );
 
@@ -823,6 +857,13 @@ export default function WorkspacePage() {
         await readApiResponse(
           response
         );
+
+      if (response.status === 401) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("accessToken");
+        setError("Your login session is invalid or expired. Please log in again.");
+        return;
+      }
 
       console.log(
         "📥 Workspace documents response:",
@@ -936,6 +977,8 @@ export default function WorkspacePage() {
           ? loadError.message
           : "Failed to load Workspace documents."
       );
+    } finally {
+      setIsPreparingWorkspace(false);
     }
   }
 
@@ -955,7 +998,7 @@ export default function WorkspacePage() {
     files: File[]
   ) {
     // --------------------------------------------------
-    // Validate PDFs
+    // Validate supported documents
     // --------------------------------------------------
 
     const pdfFiles =
@@ -963,14 +1006,13 @@ export default function WorkspacePage() {
         (file) =>
           file.type ===
             "application/pdf" ||
-          file.name
-            .toLowerCase()
-            .endsWith(".pdf")
+          file.name.toLowerCase().endsWith(".pdf") ||
+          file.name.toLowerCase().endsWith(".docx")
       );
 
     if (!pdfFiles.length) {
       setError(
-        "Please select PDF files only."
+        "Please select PDF or DOCX files only."
       );
 
       return;
@@ -992,40 +1034,8 @@ export default function WorkspacePage() {
     }
 
     // --------------------------------------------------
-    // Maximum 10 documents
-    // --------------------------------------------------
-
-    const remainingSlots =
-      10 - documents.length;
-
-    if (remainingSlots <= 0) {
-      setError(
-        "You can upload a maximum of 10 documents."
-      );
-
-      return;
-    }
-
-    const filesToUpload =
-      pdfFiles.slice(
-        0,
-        remainingSlots
-      );
-
-    if (
-      pdfFiles.length >
-      remainingSlots
-    ) {
-      setError(
-        `Only ${remainingSlots} more PDF${
-          remainingSlots > 1
-            ? "s are"
-            : " is"
-        } allowed.`
-      );
-    } else {
-      setError("");
-    }
+    const filesToUpload = pdfFiles;
+    setError("");
 
     setIsUploading(true);
 
@@ -1071,11 +1081,7 @@ export default function WorkspacePage() {
           `${API_URL}/documents/upload`,
           {
             method: "POST",
-
-            headers: {
-              Authorization:
-                `Bearer ${token}`,
-            },
+            headers: getAuthHeaders(token),
 
             body: formData,
           }
@@ -1354,6 +1360,11 @@ export default function WorkspacePage() {
       return;
     }
 
+    if (isPreparingWorkspace) {
+      setError("Workspace documents are still being prepared. Please wait.");
+      return;
+    }
+
     // --------------------------------------------------
     // Login required
     // --------------------------------------------------
@@ -1395,11 +1406,8 @@ export default function WorkspacePage() {
             method: "POST",
 
             headers: {
-              "Content-Type":
-                "application/json",
-
-              Authorization:
-                `Bearer ${token}`,
+              "Content-Type": "application/json",
+              ...getAuthHeaders(token),
             },
 
             body: JSON.stringify({
@@ -1537,11 +1545,13 @@ export default function WorkspacePage() {
                 </p>
 
                 <h2 className="mt-1 text-2xl font-black text-black">
-                  Uploaded PDFs
+                  Uploaded Documents
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  {documents.length} of 10 documents uploaded
+                  {documents.length} document{
+                    documents.length === 1 ? "" : "s"
+                  } uploaded
                 </p>
 
               </div>
@@ -1553,7 +1563,7 @@ export default function WorkspacePage() {
                 }
                 disabled={
                   isUploading ||
-                  documents.length >= 10
+                  isPreparingWorkspace
                 }
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-black text-white transition hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
@@ -1563,7 +1573,9 @@ export default function WorkspacePage() {
                   size={18}
                 />
 
-                ADD MORE PDFs
+                {isPreparingWorkspace
+                  ? "PREPARING DOCUMENTS..."
+                  : "ADD MORE DOCUMENTS"}
 
               </button>
 
@@ -1749,7 +1761,7 @@ export default function WorkspacePage() {
 
                 type="file"
 
-                accept=".pdf,application/pdf"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 
                 multiple
 
@@ -1775,7 +1787,7 @@ export default function WorkspacePage() {
 
               <p className="mt-3 max-w-sm text-sm leading-6 text-purple-200/60">
 
-                Select multiple PDF documents at
+                Select multiple PDF or DOCX documents at
                 once or drag and drop them here.
 
               </p>
@@ -1783,11 +1795,11 @@ export default function WorkspacePage() {
               <div className="mt-5 flex flex-wrap justify-center gap-2">
 
                 <span className="rounded-full bg-purple-500/10 px-3 py-1.5 text-xs font-bold text-purple-300">
-                  PDF only
+                  PDF or DOCX
                 </span>
 
                 <span className="rounded-full bg-purple-500/10 px-3 py-1.5 text-xs font-bold text-purple-300">
-                  Maximum 10
+                  Unlimited documents
                 </span>
 
                 <span className="rounded-full bg-purple-500/10 px-3 py-1.5 text-xs font-bold text-purple-300">
@@ -1904,7 +1916,8 @@ export default function WorkspacePage() {
 
                 disabled={
                   !selectedDocumentId ||
-                  isAsking
+                  isAsking ||
+                  isPreparingWorkspace
                 }
 
                 placeholder={

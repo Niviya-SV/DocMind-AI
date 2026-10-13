@@ -1,3 +1,4 @@
+git add backend/routes/sandboxRoutes.js
 
 const express = require("express");
 const multer = require("multer");
@@ -11,7 +12,7 @@ const router = express.Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 },
+  limits: { fileSize: 500 * 1024 * 1024 },
   fileFilter: (req, file, callback) => {
     if (
       file.mimetype !== "application/pdf" &&
